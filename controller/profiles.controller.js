@@ -1,19 +1,20 @@
 const { profileModel, validateProfile } = require('../models/profiles.service');
+const HTTP_STATUS = require('../constants/httpStatusCodes');
 
-const createProfile = async (req, res) => {
+const createProfile = async (req, res, next) => {
     try {
         const { bio, education, experience, CV } = req.body;
         const userId = req.user.id; // Laga soo qaatay Token-ka
 
         const { error } = validateProfile({ bio, education, experience, CV, userId });
         if (error) {
-            return res.status(400).json({ status: "false", message: error.details[0].message });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: error.details[0].message });
         }
 
         // Hubi haddii uu horey u lahaa profile
         const existingProfile = await profileModel.findOne({ userId });
         if (existingProfile) {
-            return res.status(400).json({ status: "false", message: "Profile already exists for this user." });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: "Profile already exists for this user." });
         }
 
         const newProfile = new profileModel({
@@ -26,79 +27,67 @@ const createProfile = async (req, res) => {
 
         await newProfile.save();
 
-        res.status(201).json({
+        res.status(HTTP_STATUS.CREATED).json({
             status: "true",
             message: "Profile created successfully",
             data: newProfile
         });
     } catch (err) {
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 };
 
 // get all profiles
-const GET = async ( req, res ) => {
+const GET = async ( req, res, next ) => {
     try{
         const profiles = await profileModel.find().populate("userId", "name email role");
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "Profiles found successfully",
             data: profiles
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
-    };
+        next(err);
+    }
 }
 
-const getProfileByUserId = async (req, res) => {
+const getProfileByUserId = async (req, res, next) => {
     try {
         const { userId } = req.params;
         const profile = await profileModel.findOne({ userId }).populate("userId", "name email role skills");
 
         if (!profile) {
-            return res.status(404).json({ status: "false", message: "Profile not found" });
+            return res.status(HTTP_STATUS.NOT_FOUND).json({ status: "false", message: "Profile not found" });
         }
 
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "Profile retrieved successfully",
             data: profile
         });
     } catch (err) {
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 };
 
-const updateProfile = async (req, res) => {
+const updateProfile = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { bio, education, experience, CV } = req.body;
 
         const profile = await profileModel.findById(id);
         if (!profile) {
-            return res.status(404).json({ status: "false", message: "Profile not found" });
+            return res.status(HTTP_STATUS.NOT_FOUND).json({ status: "false", message: "Profile not found" });
         }
 
         // Amni: Hubi in profile-kan uu isagu leeyahay
         if (profile.userId.toString() !== req.user.id) {
-            return res.status(403).json({ status: "false", message: "Unauthorized to update this profile." });
+            return res.status(HTTP_STATUS.FORBIDDEN).json({ status: "false", message: "Unauthorized to update this profile." });
         }
 
         const { error } = validateProfile({ bio, education, experience, CV, userId: profile.userId.toString() });
         if (error) {
-            return res.status(400).json({ status: "false", message: error.details[0].message });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: error.details[0].message });
         }
 
         const updatedProfile = await profileModel.findByIdAndUpdate(
@@ -107,17 +96,13 @@ const updateProfile = async (req, res) => {
             { new: true }
         );
 
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "Profile updated successfully",
             data: updatedProfile
         });
     } catch (err) {
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 };
 

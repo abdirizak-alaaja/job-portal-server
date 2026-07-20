@@ -1,81 +1,70 @@
 const { usersModel, validateUsers } = require('../models/users.service');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const HTTP_STATUS = require('../constants/httpStatusCodes');
 
 // get all users
-const GET = async (req , res) => {
+const GET = async (req , res, next) => {
     try{
         const users = await usersModel.find({status: 'active'})
         .select('name email role skills status');
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "Users found successfully",
             data: users
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 }
 
 // get by skill
-const GETBYSKILL = async (req , res) => {
+const GETBYSKILL = async (req , res, next) => {
     try{
         const skill = req.params.skills;
         const users = await usersModel.find({status:'active', skills: skill})
         .select('name email role skills ');
         if(!users || users.length === 0){
-            return res.status(404).json({
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
                 status: "false",
                 message: "Users not found"
             });
         }
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "Users found successfully",
             data: users
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 }
 
 // get user by id
-const GETBYID = async ( req , res) => {
+const GETBYID = async ( req , res, next) => {
     try{
         const userById = req.params.id;
         const user = await usersModel.findOne({ _id: userById, status: 'active' })
         .select('name email role skills ');
         if(!user){
-            return res.status(404).json({ status: "false", message: "User not found" });
+            return res.status(HTTP_STATUS.NOT_FOUND).json({ status: "false", message: "User not found" });
         }
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "User found successfully",
             data: user
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 }
 
 // create user
-const POST = async (req , res) => {
+const POST = async (req , res, next) => {
     try{
         const { error } = validateUsers(req.body);
         if (error) {
-            return res.status(400).json({ status: "false", message: error.details[0].message });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: error.details[0].message });
         }
 
         const { name, email, role, skills, password } = req.body;
@@ -83,7 +72,7 @@ const POST = async (req , res) => {
         // Hubi haddii uu hore u jiray email-kan
         const existingUser = await usersModel.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ status: "false", message: "Email already registered" });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: "Email already registered" });
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -103,36 +92,32 @@ const POST = async (req , res) => {
         delete userResponse.password; 
         delete userResponse.__v;
 
-        res.status(201).json({
+        res.status(HTTP_STATUS.CREATED).json({
             status: "true",
             message: "User created successfully",
             data: userResponse
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 }
 
 // post user login
-const POSTLOGIN = async (req , res) => {
+const POSTLOGIN = async (req , res, next) => {
     try{
         const {email, password} = req.body;
         if(!email || !password){
-            return res.status(400).json({ status: "false", message: "Email and password are required" });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: "Email and password are required" });
         }
         
         const user = await usersModel.findOne({email});
         if(!user || user.status === 'deleted'){
-            return res.status(400).json({ status: "false", message: "Email or password is incorrect" });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: "Email or password is incorrect" });
         }
 
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) {
-            return res.status(400).json({ status: "false", message: "Email or password is incorrect" });
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({ status: "false", message: "Email or password is incorrect" });
         }
 
         // Soo saar JWT Token
@@ -142,7 +127,7 @@ const POSTLOGIN = async (req , res) => {
             { expiresIn: '24h' }
         );
 
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true", 
             message: "User logged in successfully",
             token: token,
@@ -155,22 +140,18 @@ const POSTLOGIN = async (req , res) => {
             }
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 }
 
 // update user
-const PUT = async (req , res) => {
+const PUT = async (req , res, next) => {
     try{
         const id = req.params.id;
         
         // Amni: Isticmaalahu wuxuu bedeli karaa kaliya xogtiisa (haddii uusan admin ahayn)
         if (req.user.id !== id && req.user.role !== 'admin') {
-            return res.status(403).json({ status: "false", message: "Unauthorized to update this user." });
+            return res.status(HTTP_STATUS.FORBIDDEN).json({ status: "false", message: "Unauthorized to update this user." });
         }
 
         const {name, email, role, skills, password, status} = req.body;
@@ -185,46 +166,38 @@ const PUT = async (req , res) => {
             .select('_id name email role skills status');
 
         if(!updateUser){
-            return res.status(404).json({ status: "false", message: "User not found" });
+            return res.status(HTTP_STATUS.NOT_FOUND).json({ status: "false", message: "User not found" });
         }
 
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "User updated successfully",
             data: updateUser
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 }
 
 // delete user by id
-const DELETE = async (req , res) => {
+const DELETE = async (req , res, next) => {
     try{
         const id = req.params.id;
 
         if (req.user.id !== id && req.user.role !== 'admin') {
-            return res.status(403).json({ status: "false", message: "Unauthorized to delete this account." });
+            return res.status(HTTP_STATUS.FORBIDDEN).json({ status: "false", message: "Unauthorized to delete this account." });
         }
 
         const deleteUser = await usersModel.findByIdAndUpdate(id, { status: 'deleted' }, { new: true })
             .select('_id name email role skills status');
             
-        res.status(200).json({
+        res.status(HTTP_STATUS.OK).json({
             status: "true",
             message: "User deleted successfully",
             data: deleteUser
         });
     }catch(err){
-        res.status(500).json({
-            status: "false",
-            message: "Internal server error",
-            error: err.message
-        });
+        next(err);
     }
 }
 

@@ -26,6 +26,10 @@ app.use('/profile',profileRotes);
 const applicationRoutes = require('./routes/applications.route');
 app.use('/aplication',applicationRoutes);
 
+const { notFound, errorHandler } = require('./middleware/errorHandler');
+app.use(notFound);
+app.use(errorHandler);
+
 mongoose.connect(process.env.MONGO_URI).then(()=>{
     console.log('Connected to MongoDB');
 }).catch((err) => {
