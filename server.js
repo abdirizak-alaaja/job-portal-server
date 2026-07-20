@@ -1,4 +1,4 @@
-
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const app = express();
@@ -26,7 +26,7 @@ app.use('/profile',profileRotes);
 const applicationRoutes = require('./routes/applications.route');
 app.use('/aplication',applicationRoutes);
 
-mongoose.connect('mongodb://127.0.0.1:27017/job_portal').then(()=>{
+mongoose.connect(process.env.MONGO_URI).then(()=>{
     console.log('Connected to MongoDB');
 }).catch((err) => {
   console.error('Error connecting to MongoDB', err);
