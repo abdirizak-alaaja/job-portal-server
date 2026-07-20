@@ -1,9 +1,14 @@
-const { profileModel } = require('../models/profiles.service');
+const { profileModel, validateProfile } = require('../models/profiles.service');
 
 const createProfile = async (req, res) => {
     try {
         const { bio, education, experience, CV } = req.body;
         const userId = req.user.id; // Laga soo qaatay Token-ka
+
+        const { error } = validateProfile({ bio, education, experience, CV, userId });
+        if (error) {
+            return res.status(400).json({ status: "false", message: error.details[0].message });
+        }
 
         // Hubi haddii uu horey u lahaa profile
         const existingProfile = await profileModel.findOne({ userId });
@@ -89,6 +94,11 @@ const updateProfile = async (req, res) => {
         // Amni: Hubi in profile-kan uu isagu leeyahay
         if (profile.userId.toString() !== req.user.id) {
             return res.status(403).json({ status: "false", message: "Unauthorized to update this profile." });
+        }
+
+        const { error } = validateProfile({ bio, education, experience, CV, userId: profile.userId.toString() });
+        if (error) {
+            return res.status(400).json({ status: "false", message: error.details[0].message });
         }
 
         const updatedProfile = await profileModel.findByIdAndUpdate(

@@ -1,4 +1,4 @@
-const { jobModel } = require('../models/jobs.service');
+const { jobModel, validateJobs } = require('../models/jobs.service');
 
 // get all jobs
 const GET = async ( req, res ) => {
@@ -44,9 +44,14 @@ const GETBYID = async ( req, res ) => {
 const POST = async (req, res)=>{
     try{
         const { title, company, description, deadline } = req.body;
-        
+
         // Maadaama middleware-ku uu hubiyay inuu yahay 'company', ID-ga halkan ayaan ka helaynaa
-        const createdBy = req.user.id; 
+        const createdBy = req.user.id;
+
+        const { error } = validateJobs({ title, company, description, deadline, createdBy });
+        if (error) {
+            return res.status(400).json({ status: "false", message: error.details[0].message });
+        }
 
         const newJob = new jobModel({
             title,

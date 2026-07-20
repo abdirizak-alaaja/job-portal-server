@@ -73,8 +73,13 @@ const GETBYID = async ( req , res) => {
 // create user
 const POST = async (req , res) => {
     try{
+        const { error } = validateUsers(req.body);
+        if (error) {
+            return res.status(400).json({ status: "false", message: error.details[0].message });
+        }
+
         const { name, email, role, skills, password } = req.body;
-        
+
         // Hubi haddii uu hore u jiray email-kan
         const existingUser = await usersModel.findOne({ email });
         if (existingUser) {

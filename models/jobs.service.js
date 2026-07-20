@@ -29,11 +29,11 @@ const jobModel = mongoose.model("jobs",jobSchema);
 
 function validateJobs (jobs){
     const schema = joi.object({
-        title:joi.String().required().max(50).min(6),
-        company: joi.String().required().min(6).max(30),
-        description: joi.String().required().min(5),
-        deadline: joi.String().required(),
-        createdBy: joi.string.valid("company").required()
+        title:joi.string().required().max(50).min(6),
+        company: joi.string().required().min(6).max(30),
+        description: joi.string().required().min(5),
+        deadline: joi.string().required(),
+        createdBy: joi.string().required()
     })
 
     return(schema.validate(jobs));

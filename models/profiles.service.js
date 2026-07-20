@@ -27,7 +27,7 @@ const profileSchema = new mongoose.Schema({
 
 const profileModel = mongoose.model("profile",profileSchema);
 
-function validateProfile (jobs){
+function validateProfile (profile){
     const schema = joi.object({
         bio:joi.string().required().max(50).min(6),
         education: joi.string().required().min(6).max(30),

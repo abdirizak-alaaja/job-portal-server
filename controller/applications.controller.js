@@ -1,10 +1,15 @@
-const { appliactionModel } = require('../models/applications.service');
+const { appliactionModel, validateApplication } = require('../models/applications.service');
 const { jobModel } = require('../models/jobs.service');
 
 const createApplication = async (req, res) => {
     try {
         const { jobId } = req.body;
         const studentId = req.user.id; // Laga helay token-ka
+
+        const { error } = validateApplication({ jobId, studentId });
+        if (error) {
+            return res.status(400).json({ status: "false", message: error.details[0].message });
+        }
 
         // Hubi in shaqadu jirto
         const jobExists = await jobModel.findById(jobId);

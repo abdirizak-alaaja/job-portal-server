@@ -3,8 +3,8 @@ const { authenticate, authorize } = require('../middleware/auth');
 const router = require('express').Router();
 
 
-router.get('/', authenticate, authorize('student'),getApplications);
-router.get('/:id', authenticate, authorize('student'),getApplicationById);
+router.get('/', authenticate, authorize('student','company'),getApplications);
+router.get('/:id', authenticate, authorize('student','company'),getApplicationById);
 
 router.post('/', authenticate, createApplication)
 router.delete('/:id', authenticate, deleteApplication)

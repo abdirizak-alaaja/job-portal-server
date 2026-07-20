@@ -4,14 +4,15 @@ const joi = require('joi');
 const applicationSchema = new mongoose.Schema({
     jobId:{
         type: mongoose.Schema.Types.ObjectId,
-        ref: "job",
+        ref: "jobs",
         required : true
     },
     status:{
         type: String,
-        enum: ["applied","not aipplied"],
+        enum: ["pending","accepted","rejected"],
+        default: "pending",
         required: true
-    }, 
+    },
     studentId:{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Users",
@@ -22,12 +23,11 @@ const applicationSchema = new mongoose.Schema({
 
 const appliactionModel = mongoose.model("application",applicationSchema);
 
-function validateJobs (application){
+function validateApplication (application){
     const schema = joi.object({
-        jobId:joi.string().required().max(50).min(6),
-        status: joi.string().required().min(6).max(30),
-        studentId: joi.string().required().min(5),
-
+        jobId:joi.string().required(),
+        status: joi.string().valid("pending","accepted","rejected").optional(),
+        studentId: joi.string().required(),
     })
 
     return(schema.validate(application));
@@ -35,5 +35,5 @@ function validateJobs (application){
 
 module.exports = {
     appliactionModel,
-    validateJobs
+    validateApplication
 }
